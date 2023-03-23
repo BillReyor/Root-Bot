@@ -16,7 +16,7 @@ A simple Discord bot that utilizes OpenAI's ChatGPT to respond to user messages.
 
 ```sh
 git clone https://github.com/BillReyor/ChatGPT_Discord_Bot.git
-cd ChatGPT_Discord_Bot
+cd ChatGPT_Discord_Bot```
 
 2. Install the required Python libraries:
 - pip install discord.py

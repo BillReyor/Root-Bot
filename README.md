@@ -52,7 +52,7 @@ A simple Discord bot that utilizes OpenAI's ChatGPT to respond to user messages.
 ## Usage
 Once the bot is online, users can interact with it using the following command:
 
-!chat <your message>
+`!chat <your message>`
 
 The bot will respond with a generated message based on the input.
 

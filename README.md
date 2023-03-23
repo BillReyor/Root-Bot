@@ -12,11 +12,9 @@ A simple Discord bot that utilizes OpenAI's ChatGPT to respond to user messages.
 
 ## Installation
 
-1. Clone the repository:
-
-```sh
-git clone https://github.com/BillReyor/ChatGPT_Discord_Bot.git
-cd ChatGPT_Discord_Bot```
+1. Clone the repository
+- git clone https://github.com/BillReyor/ChatGPT_Discord_Bot.git
+- cd ChatGPT_Discord_Bot
 
 2. Install the required Python libraries:
 - pip install discord.py

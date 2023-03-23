@@ -21,10 +21,10 @@ A simple Discord bot that utilizes OpenAI's ChatGPT to respond to user messages.
 - pip install openai
 
 3. Add your OpenAI API key and Discord bot token to the chatgpt_discord_bot.py script:
-openai.api_key = "YOUR_OPENAI_API_KEY"
-bot.run("YOUR_DISCORD_BOT_TOKEN")
+- openai.api_key = "YOUR_OPENAI_API_KEY"
+- bot.run("YOUR_DISCORD_BOT_TOKEN")
 
-Replace YOUR_OPENAI_API_KEY and YOUR_DISCORD_BOT_TOKEN with your actual OpenAI API key and Discord bot token, respectively.
+- Replace YOUR_OPENAI_API_KEY and YOUR_DISCORD_BOT_TOKEN with your actual OpenAI API key and Discord bot token, respectively.
 
 4. python chatgpt_discord_bot.py
 

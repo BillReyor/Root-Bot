@@ -1,5 +1,6 @@
 import os
 import openai
+import requests
 import discord
 from discord.ext import commands
 
@@ -17,15 +18,35 @@ openai.api_key = ""
 
 # Set up your ChatGPT function
 async def chat_gpt(prompt):
-    response = openai.Completion.create(
-        engine="text-davinci-002",
-        prompt=prompt,
-        max_tokens=200,  # Increase the maximum number of tokens in the response
-        n=1,
-        stop=None,
-        temperature=0.9,  # Increase the temperature to generate more verbose responses
-    )
-    return response.choices[0].text.strip()
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {openai.api_key}",
+    }
+
+    data = {
+        "model": "gpt-3.5-turbo",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a helpful assistant."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "max_tokens": 2000,
+        "temperature": 0.9,
+    }
+
+    response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
+    response_json = response.json()
+
+    if response.status_code != 200:
+        raise Exception(f"OpenAI API returned an error: {response_json['error']}")
+
+    assistant_message = response_json['choices'][0]['message']['content'].strip()
+    return assistant_message
 
 # Define your bot commands
 @bot.event
@@ -34,7 +55,7 @@ async def on_ready():
 
 @bot.command(name="chat")
 async def chat(ctx, *, message):
-    prompt = f"{ctx.author.name}: {message}\nChatGPT:"
+    prompt = message
     response = await chat_gpt(prompt)
     await ctx.send(response)
 

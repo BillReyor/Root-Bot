@@ -7,7 +7,6 @@ import requests
 import discord
 import shodan
 import csv
-import random
 from datetime import datetime, timedelta
 from discord.ext import commands, tasks
 import traceback

@@ -1,4 +1,7 @@
 import os
+import time
+import zipfile
+from pathlib import Path
 import openai
 import requests
 import discord
@@ -25,6 +28,19 @@ shodan_api_key = ""
 shodan_api = shodan.Shodan(shodan_api_key)
 
 last_interaction = datetime.now() - timedelta(hours=24)
+
+def zip_command_history():
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    zip_filename = f"command_history_{timestamp}.zip"
+    with zipfile.ZipFile(zip_filename, mode="w", compression=zipfile.ZIP_DEFLATED) as zipf:
+        zipf.write("command_history.csv")
+    os.remove("command_history.csv")
+
+def should_zip_history():
+    history_file = Path("command_history.csv")
+    if history_file.exists() and history_file.stat().st_mtime < time.time() - 24 * 60 * 60:
+        return True
+    return False
 
 def log_command_to_csv(command, message, response=None):
     with open("command_history.csv", mode="a", newline="", encoding="utf-8") as file:
@@ -128,11 +144,18 @@ async def shodan_query(ctx, *, query):
 
 @bot.command(name="history")
 async def history(ctx):
-    with open("command_history.csv", mode="r", newline="", encoding="utf-8") as file:
-        reader = csv.reader(file)
-        response = "History of commands:\n"
-        for row in reader:
-            response += f"{row[0]} | {row[1]} | {row[2]} | {row[3]}\n"
-        await ctx.send(response)
+    try:
+        with open("command_history.csv", mode="r", newline="", encoding="utf-8") as file:
+            reader = csv.reader(file)
+            response = "History of commands:\n"
+            for row in reader:
+                response += f"{row[0]} | {row[1]} | {row[2]} | {row[3]}\n"
+            await send_large_message(ctx.channel, response, max_length=2000)  # Use the send_large_message function
+    except Exception as e:
+        print(f"Error in !history command: {e}")
+        await ctx.send(f"Error: {e}")
 
-bot.run("")
+if __name__ == "__main__":
+    if should_zip_history():
+        zip_command_history()
+    bot.run("")

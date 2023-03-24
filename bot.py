@@ -7,6 +7,7 @@ import csv
 import random
 from datetime import datetime, timedelta
 from discord.ext import commands, tasks
+import traceback
 
 # Set up the Discord client with updated intents
 intents = discord.Intents.default()
@@ -42,7 +43,7 @@ async def chat_gpt(prompt):
             {"role": "user", "content": prompt},
         ],
         "max_tokens": 2000,
-        "temperature": 0.9,
+        "temperature": 1.4,
     }
     response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
     response_json = response.json()
@@ -84,8 +85,14 @@ async def chat(ctx, *, message):
     global last_interaction
     last_interaction = datetime.now()
     log_command_to_csv("chat", ctx.message)
-    response = await chat_gpt(message)
-    await ctx.send(response)
+    try:
+        response = await chat_gpt(message)
+        await ctx.send(response)
+    except Exception as e:
+        traceback.print_exc()
+        with open("error.log", mode="a", encoding="utf-8") as file:
+            file.write(f"{datetime.now()} - Exception in !chat command: {e}\n")
+
 
 @bot.command(name="shodan")
 async def shodan_query(ctx, *, query):

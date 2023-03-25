@@ -1,15 +1,17 @@
-import os
-import time
-import zipfile
-from pathlib import Path
-import openai
-import discord
-import shodan
 import csv
+import os
 import random
-from datetime import datetime, timedelta
-from discord.ext import commands, tasks
+import time
 import traceback
+import zipfile
+from datetime import datetime, timedelta
+from pathlib import Path
+
+import discord
+import openai
+import shodan
+from discord.ext import commands, tasks
+from dotenv import load_dotenv
 
 # Set up the Discord client with updated intents
 intents = discord.Intents.default()
@@ -23,6 +25,12 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # Set up your API keys
 openai.api_key = ""
 shodan_api_key = ""
+
+# alternatively uncomment to load secrets as enviromental variables
+#load_dotenv()
+#openai_api_key = os.getenv("OPENAI_API_KEY")
+#shodan_api_key = os.getenv("SHODAN_API_KEY")
+#bot_token = os.getenv("BOT_TOKEN")
 
 shodan_api = shodan.Shodan(shodan_api_key)
 
@@ -216,4 +224,4 @@ async def history(ctx):
 if __name__ == "__main__":
     if should_zip_history():
         zip_command_history()
-    bot.run("")
+    bot.run("") #replace with bot.run(bot_token) if using env variables

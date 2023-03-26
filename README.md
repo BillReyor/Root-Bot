@@ -1,15 +1,19 @@
-# Using the Code
+# Root Bot
 
-This code is a Discord bot that can chat using OpenAI's GPT-3, search the Shodan database, and keep track of user command history. Follow the steps below to use this code:
+Welcome to Root Bot, your AI assistant for exploring the world of hacking, security, and privacy.
 
-## Prerequisites
+## Commands
+- `!chat [message]`: Chat with Root Bot and get answers to your questions.
+- `!shodan [query]`: Search for devices using the Shodan API.
+- `!pwned [email]`: Check if an email address has been involved in a data breach using the HIBP API.
+- `!history`: View the history of commands used with Root Bot.
+- `!help`: Display the available commands.
 
-Before you start, you will need the following:
-
-- Python 3.7 or higher installed on your machine
-- A Discord account and a server where you have the permission to add bots
-- OpenAI API key - You can sign up for OpenAI [here](https://beta.openai.com/signup/)
-- Shodan API key - You can sign up for Shodan [here](https://account.shodan.io/register)
+## Requirements
+To use Root Bot, you need to set up your API keys:
+- OpenAI API key
+- Shodan API key
+- HIBP API key
 
 # Setting up the Bot on Discord
 
@@ -60,6 +64,12 @@ To search the Shodan database, type `!shodan` followed by your query in the Disc
 `!shodan Apache`
 
 The bot will then return the search results.
+
+### `!pwned [email]`
+
+This command allows you to check if an email address has been involved in a data breach using the HIBP API. Example usage:  
+
+`!pwned example@example.com`
 
 ### Viewing Command History
 

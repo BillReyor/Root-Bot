@@ -1,5 +1,5 @@
 import os, time, zipfile, csv, random, traceback
-import logging
+import logging, requests
 from pathlib import Path
 from datetime import datetime, timedelta
 import openai, discord, shodan
@@ -15,15 +15,27 @@ intents = discord.Intents.default()
 intents.typing = intents.presences = False
 intents.messages = intents.message_content = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 # Set up your API keys
 openai.api_key = ""
 shodan_api_key = ""
+HIBP_API_KEY = "your_api_key_here"
 
 shodan_api = shodan.Shodan(shodan_api_key)
 
 last_interaction = datetime.now() - timedelta(hours=24)
+
+instructions = """
+Welcome to Root Bot, your AI assistant for exploring the world of hacking, security, and privacy.
+
+Here are the available commands:
+- !chat [message]: Chat with Root Bot and get answers to your questions.
+- !shodan [query]: Search for devices using the Shodan API.
+- !pwned [email]: Check if an email address has been involved in a data breach using the HIBP API.
+- !history: View the history of commands used with Root Bot.
+- !help: Display this message.
+"""
 
 def zip_command_history():
     with zipfile.ZipFile(f"command_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip", "w", zipfile.ZIP_DEFLATED) as zipf:
@@ -73,10 +85,16 @@ async def check_and_send_fact():
 async def on_ready():
     logging.info(f"{bot.user.name} is now online!")
     check_and_send_fact.start()
+    channel = bot.get_channel(1083001612269789254) # Replace YOUR_CHANNEL_ID with the ID of the channel where the bot will be used
+    await channel.send(instructions)
 
 async def send_large_message(channel, content, max_length=2000):
     for i in range(0, len(content), max_length):
         await channel.send(content[i:i+max_length])
+
+@bot.command(name="help")
+async def help_command(ctx):
+    await ctx.send(instructions)
 
 @bot.command(name="chat")
 async def chat(ctx, *, message):
@@ -104,6 +122,30 @@ async def shodan_query(ctx, *, query):
         await ctx.send(response)
     except shodan.APIError as e:
         await ctx.send(f"Error: {e}")
+
+@bot.command(name="pwned")
+async def pwned(ctx, *, email):
+    if HIBP_API_KEY == "your_api_key_here":
+        await ctx.send("Error: HIBP API key is not configured. Please set your HIBP API key and try again.")
+        return
+    try:
+        response = requests.get(f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}",
+                                headers={"User-Agent": "Mozilla/5.0", "hibp-api-key": HIBP_API_KEY})
+        if response.status_code == 200:
+            breaches = response.json()
+            sites = ", ".join([breach["Name"] for breach in breaches])
+            message = f"{email} has been pwned in the following breaches: {sites}"
+        elif response.status_code == 404:
+            message = f"{email} has not been pwned."
+        else:
+            message = f"Error checking if {email} has been pwned."
+            logging.error(f"Error checking if {email} has been pwned. API response: {response.text}")
+        await ctx.send(message)
+    except requests.exceptions.RequestException as e:
+        message = f"Error checking if {email} has been pwned: {e}"
+        await ctx.send(message)
+        logging.exception(f"Exception in pwned command for email '{email}'")
+
 
 @bot.command(name="history")
 async def history(ctx):

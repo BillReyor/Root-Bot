@@ -15,7 +15,10 @@ intents = discord.Intents.default()
 intents.typing = intents.presences = False
 intents.messages = intents.message_content = True
 
-bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
+bot = commands.Bot(command_prefix="!", intents=intents)
+#remove built-in help because we use it already
+bot.remove_command("help")
+
 
 # Set up your API keys
 openai.api_key = ""
@@ -55,7 +58,7 @@ async def chat_gpt(prompt):
     data = {
         "model": "gpt-3.5-turbo",
         "messages": [
-            {"role": "system", "content": "Welcome to the Root Global, I am Root Bot, your AI assistant for exploring the world of hacking, security, and privacy. Feel free to ask me anything and I'll provide the knowledge you need. Let's respect the rules and each other, and share our knowledge and skills to push the limits of what's possible."},
+            {"role": "system", "content": "I am Root Bot, your AI assistant for exploring the world of hacking, security, and privacy. As Root Bot, I answer normal questions as an assistant but I also create image prompts from user-provided concepts. For example:\n\nConcept: Steampunk insect macro shot\nPrompt: a close up of a bug with big eyes, cyber steampunk, highly detailed 8k, space insect android --v 4 --q 2 --stylize 1000\nConcept: Orange pie on a wooden table\nPrompt: a pie on a table, orange details, vivid attention to detail, warm sunshine, crisp smooth lines --v 4 --q 2 --stylize 1000\nConcept: Close up of a plant with blue and golden leaves\nPrompt: close-up of golden leaves, abstract design, blue flax, solid colors, background artwork --v 4 --q 2 --stylize 1000\nConcept: close up of two prisoners with there hands through the bars\nPrompt: two sad bank robbers in a prison in classic prisoner suit with stripes, onether one thin and another one fat, standing and keeping their hands on bars, Robert Crump style --ar 16:9\nConcept: city scape based on Vancouverism\nPrompt: city scape based on Vancouverism :: skyscrapers made of highly reflective 🪞 material in assorted colors :: chrome reflections city :: modern buidlings, green recreation areas, ponds, river, japanese gardens, eco friendly, sustainable, vibrant :: Godzilla reflections in the buildings' windows --ar 1:2 --v 5\nConcept: a black kid picking fruit to eat\nPrompt: a cool and elegant African teenager boy full figure is picking a tree fruit on the left of a lush garden environment full of african fruit trees and flowers, spring, cinematic, photoshoot, shot on 25mm lens, depth of field, tilt blur, shutter speed 1/ 1000, f/ 22, white balance, 32k, super resolution, professional photo rgb, bright background, dramatic lighting, incandescent, soft lighting, volumetric, Conte - Jour, global illumination, screen space global illumination, scattering, shadows, harsh, flickering, lumen reflections, screen space reflections, diffraction gradation, aberration Chromatic, IT Offset, Scanlines, Ambient Occlusion, Anti - aliasing, FKAA, TXAA, RTX, SSAO, OpenGL - Shader's, Post Processing, Post Production, Cell Shading, Tone Mapping, CGI, VFX, SFX, Insanely Detailed and intricate, hyper maximalist, elegant, photography, volumetric, ultra - detailed, intricate detail, super - detailed, --ar 3:2 --q 2 --uplight --v 5\n\nFeel free to ask me anything and I'll provide the knowledge you need. Let's respect the rules and each other, and share our knowledge and skills to push the limits of what's possible."},
             {"role": "user", "content": prompt[:max_prompt_tokens]},
         ],
         "max_tokens": max_tokens,
@@ -64,6 +67,7 @@ async def chat_gpt(prompt):
     response = openai.ChatCompletion.create(**data)
     choice = response.choices[0].message['content'].strip()
     return choice, response.usage["total_tokens"]
+
 
 async def get_random_fact():
     number = random.randint(1, 100)
@@ -145,7 +149,6 @@ async def pwned(ctx, *, email):
         message = f"Error checking if {email} has been pwned: {e}"
         await ctx.send(message)
         logging.exception(f"Exception in pwned command for email '{email}'")
-
 
 @bot.command(name="history")
 async def history(ctx):

@@ -84,7 +84,15 @@ async def on_ready():
     logging.info(f"{bot.user.name} is now online!")
 
 @bot.command(name="hashcat")
-async def _hashcat(ctx, algorithm: str, hash_value: str):
+async def _hashcat(ctx, algorithm: str = None, hash_value: str = None):
+    # Check if no arguments were provided
+    if not algorithm or not hash_value:
+        help_text = ("Usage: !hashcat [algorithm] [hash_value]\n"
+                     "Supported algorithms: md5, sha1, ntlm, netntlmv2, mssql2000, mssql2005\n"
+                     "Example: !hashcat md5 5d41402abc4b2a76b9719d911017c592")
+        await ctx.send(help_text)
+        return
+
     global is_processing_job
 
     if is_processing_job:
@@ -135,6 +143,7 @@ async def _hashcat(ctx, algorithm: str, hash_value: str):
         await ctx.send("Hashcat operation timed out.")
     else:
         await ctx.send(f"Failed to crack the hash:\n\n{stdout}")
+
 
 @bot.command(name="hashcat_status")
 async def hashcat_status(ctx):

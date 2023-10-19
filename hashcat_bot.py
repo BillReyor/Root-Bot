@@ -23,12 +23,14 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 bot.remove_command("help")
 
 # Global variable to keep track of whether the bot is currently running a hashcat job
+
 is_processing_job = False
 current_job_status = {
     "algorithm": None,
     "start_time": None,
     "progress": "0%"
 }
+current_mode = None  #global variable for tracking the hashcat attack mode
 
 def read_log_file(filename):
     with open(filename, 'r') as file:
@@ -36,7 +38,7 @@ def read_log_file(filename):
     return content
 
 async def run_hashcat(command: list, timeout: int):
-    global is_processing_job, current_job_status
+    global is_processing_job, current_job_status, current_mode
     process = None
 
     # 1. Create a unique filename
@@ -72,11 +74,14 @@ async def run_hashcat(command: list, timeout: int):
         logging.error(f"Error running hashcat: {e}")
         return str(e), "Error"
     finally:
-        is_processing_job = False
+        # Only set to False if we're not in brute force mode
+        if current_mode != "brute_force":
+            is_processing_job = False
+            current_mode = None
 
 def find_password_for_hash(target_hash, filename="hashcat.potfile"):
     target_hash = target_hash.lower()
-    with open(filename, 'r') as f:
+    with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
         for line in f:
             parts = line.strip().rsplit(":", 1)
             if len(parts) != 2:
@@ -86,12 +91,16 @@ def find_password_for_hash(target_hash, filename="hashcat.potfile"):
                 return password
     return None
 
+
 @bot.event
 async def on_ready():
     logging.info(f"{bot.user.name} is now online!")
 
 @bot.command(name="hashcat")
 async def _hashcat(ctx, algorithm: str = None, hash_value: str = None):
+    # Define the path to your rule file
+    RULE_FILE = "rules/OneRuleToRuleThemStill.rule"
+    
     # Check if no arguments were provided
     if not algorithm or not hash_value:
         help_text = ("Usage: !hashcat [algorithm] [hash_value]\n"
@@ -100,7 +109,7 @@ async def _hashcat(ctx, algorithm: str = None, hash_value: str = None):
         await ctx.send(help_text)
         return
 
-    global is_processing_job
+    global is_processing_job, current_mode
 
     if is_processing_job:
         await ctx.send("Hashcat is currently processing a job. Please wait.")
@@ -133,30 +142,36 @@ async def _hashcat(ctx, algorithm: str = None, hash_value: str = None):
         return
 
     wordlist = "rockyou.txt"
-    command = ["hashcat", "-m", str(supported_algorithms[algorithm]), hash_value, wordlist]
+    command = ["hashcat", "-m", str(supported_algorithms[algorithm]), hash_value, wordlist, "-r", RULE_FILE]
 
     is_processing_job = True
 
-    await ctx.send("Hashcat operation started using rockyou.txt wordlist, this may take up to an hour.")
-    log_content, status = await run_hashcat(command, 3600)  # Get the log content and status
+    await ctx.send("Hashcat operation started using rockyou.txt wordlist with rule file, this may take up to an hour.")
+    stdout, status = await run_hashcat(command, 3600)
 
-    if "Exhausted" in log_content or status == "Timeout":  
+    # If we haven't found the password after the wordlist is exhausted or timeout
+    if "Exhausted" in stdout or status == "Timeout":
         password = find_password_for_hash(hash_value)
         if not password:
-            await ctx.send("Did not find the password using rockyou.txt. Switching to brute force mode for an additional hour.")
+            await ctx.send("Did not find the password using rockyou.txt with rule file. Switching to brute force mode for an additional hour.")
+        
+            current_mode = "brute_force"
+            is_processing_job = True  # Setting this to True again before starting brute force
+        
             command = ["hashcat", "-m", str(supported_algorithms[algorithm]), hash_value, "-a", "3"]
-            log_content, status = await run_hashcat(command, 3600)  # Get the log content and status for brute force mode
+            stdout, status = await run_hashcat(command, 3600)  # running for an additional hour
+
 
     if status == "Success":
         password = find_password_for_hash(hash_value)
         if password:
             await ctx.send(f"Hash cracked!\n\nHash: {hash_value}\nPassword: {password}")
         else:
-            await ctx.send(f"Hash cracked, but could not retrieve the password from the potfile.\n\n{log_content}")
+            await ctx.send(f"Hash cracked, but could not retrieve the password from the potfile.\n\n{stdout}")
     elif status == "Timeout":
         await ctx.send("Hashcat operation timed out without finding the password.")
     else:
-        await ctx.send(f"Failed to crack the hash:\n\n{log_content}")
+        await ctx.send(f"Failed to crack the hash:\n\n{stdout}")
 
 @bot.command(name="hashcat_status")
 async def hashcat_status(ctx):

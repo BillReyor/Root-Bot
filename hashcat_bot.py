@@ -37,7 +37,7 @@ def read_log_file(filename):
         content = file.read()
     return content
 
-async def run_hashcat(command: list, timeout: int):
+async def run_hashcat(command: list, timeout: int, job_type: str = "rockyou"):  # <-- Added job_type parameter
     global is_processing_job, current_job_status, current_mode
     process = None
 
@@ -74,10 +74,11 @@ async def run_hashcat(command: list, timeout: int):
         logging.error(f"Error running hashcat: {e}")
         return str(e), "Error"
     finally:
-        # Only set to False if we're not in brute force mode
-        if current_mode != "brute_force":
+        # Check the job_type before deciding to reset the global state
+        if job_type != "brute_force":
             is_processing_job = False
             current_mode = None
+
 
 def find_password_for_hash(target_hash, filename="hashcat.potfile"):
     target_hash = target_hash.lower()
@@ -147,7 +148,8 @@ async def _hashcat(ctx, algorithm: str = None, hash_value: str = None):
     is_processing_job = True
 
     await ctx.send("Hashcat operation started using rockyou.txt wordlist with rule file, this may take up to an hour.")
-    stdout, status = await run_hashcat(command, 3600)
+    stdout, status = await run_hashcat(command, 3600, "rockyou") # <-- Specify job type
+
 
     # If we haven't found the password after the wordlist is exhausted or timeout
     if "Exhausted" in stdout or status == "Timeout":
@@ -159,8 +161,7 @@ async def _hashcat(ctx, algorithm: str = None, hash_value: str = None):
             is_processing_job = True  # Setting this to True again before starting brute force
         
             command = ["hashcat", "-m", str(supported_algorithms[algorithm]), hash_value, "-a", "3"]
-            stdout, status = await run_hashcat(command, 3600)  # running for an additional hour
-
+            stdout, status = await run_hashcat(command, 3600, "brute_force")  # <-- Specify job type
 
     if status == "Success":
         password = find_password_for_hash(hash_value)

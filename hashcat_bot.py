@@ -6,38 +6,19 @@ import time
 import datetime
 from discord.ext import commands
 
-# Setup logging
+# Logging Setup
 logging.basicConfig(filename="app.log", level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Set up the Discord client with updated intents
-intents = discord.Intents.default()
-intents.typing = False
-intents.presences = False
-intents.messages = True
-intents.message_content = True
-
-bot = commands.Bot(command_prefix="!", intents=intents)
-bot.remove_command("help")  # Remove built-in help
-
-# Global variables
-is_processing_job = False
-current_process = None  # To keep track of the running hashcat process
-current_job_status = {
-    "algorithm": None,
-    "start_time": None,
-    "progress": "0%"
-}
-current_mode = None
-
 # Constants
+INTENTS = discord.Intents.default()
+INTENTS.typing = False
+INTENTS.presences = False
+INTENTS.messages = True
+INTENTS.message_content = True
+
 RULE_FILE = "rules/OneRuleToRuleThemStill.rule"
 SUPPORTED_ALGORITHMS = {
-    "md5": 0,
-    "sha1": 100,
-    "ntlm": 1000,
-    "netntlmv2": 5600,
-    "mssql2000": 131,
-    "mssql2005": 132
+    "md5": 0, "sha1": 100, "ntlm": 1000, "netntlmv2": 5600, "mssql2000": 131, "mssql2005": 132
 }
 HASH_PATTERNS = {
     "md5": re.compile("^[a-fA-F0-9]{32}$"),
@@ -48,85 +29,79 @@ HASH_PATTERNS = {
     "mssql2005": re.compile("^[a-fA-F0-9]{40}$")
 }
 
-def read_log_file(filename):
-    with open(filename, 'r') as file:
-        return file.read()
+bot = commands.Bot(command_prefix="!", intents=INTENTS)
+bot.remove_command("help")
 
-def find_password_for_hash(target_hash, filename="hashcat.potfile"):
-    target_hash = target_hash.lower()
-    with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
-        for line in f:
-            parts = line.strip().rsplit(":", 1)
-            if len(parts) != 2:
-                continue
-            hash_from_file, password = parts
-            if hash_from_file.lower() == target_hash:
-                return password
-    return None
 
-async def run_hashcat(command: list, timeout: int, job_type: str = "rockyou"):
-    global is_processing_job, current_job_status, current_mode, current_process
-    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    log_filename = f"hashcat_output_{timestamp}.log"
+class HashcatManager:
 
-    command.extend(["--status-timer=1"])  # <-- Added this line
+    def __init__(self):
+        self.is_processing_job = False
+        self.current_process = None
+        self.current_job_status = {"algorithm": None, "start_time": None, "progress": "0%"}
+        self.current_mode = None
 
-    try:
-        with open(log_filename, 'a') as log_file:
-            current_process = await asyncio.create_subprocess_exec(*command, stdout=log_file, stderr=log_file)
+    def read_log_file(self, filename):
+        with open(filename, 'r') as file:
+            return file.read()
 
-            current_job_status["start_time"] = time.time()
-            current_job_status["algorithm"] = command[2]
+    def find_password_for_hash(self, target_hash, filename="hashcat.potfile"):
+        target_hash = target_hash.lower()
+        with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
+            for line in f:
+                parts = line.strip().rsplit(":", 1)
+                if len(parts) != 2:
+                    continue
+                hash_from_file, password = parts
+                if hash_from_file.lower() == target_hash:
+                    return password
+        return None
 
-            await asyncio.wait_for(current_process.wait(), timeout=timeout)
+    def get_hashcat_status(self, filename):
+        with open(filename, 'r') as file:
+            lines = file.readlines()
+        for line in reversed(lines):
+            if "Progress.........:" in line:
+                match = re.search(r"Progress.........: .+? \((\d+\.\d+)%\)", line)
+                if match:
+                    return match.group(1) + "%"
+        return "0%"
 
-            log_content = read_log_file(log_filename)
+    async def run_hashcat(self, command, timeout, job_type="rockyou"):
+        log_content = ""  # initialize log_content here
+        timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        log_filename = f"hashcat_output_{timestamp}.log"
+        command.extend(["--status-timer=1"])
+        try:
+            with open(log_filename, 'a') as log_file:
+                self.current_process = await asyncio.create_subprocess_exec(*command, stdout=log_file, stderr=log_file)
+                self.current_job_status["start_time"] = time.time()
+                self.current_job_status["algorithm"] = command[2]
+                await asyncio.wait_for(self.current_process.wait(), timeout=timeout)
+                log_content = self.read_log_file(log_filename)
+                if "Exhausted" in log_content:
+                    return log_content, "Exhausted"
+                elif self.current_process.returncode == 0:
+                    self.current_job_status["progress"] = "100%"
+                    return log_content, "Success"
+                else:
+                    return log_content, "Error"
+        except asyncio.TimeoutError:
+            if self.current_process:
+                self.current_process.terminate()
+            self.is_processing_job = False
+            self.current_mode = None
+            return f"Hashcat operation timed out. Partial output in {log_filename}", "Timeout"
+        except Exception as e:
+            logging.error(f"Error running hashcat: {e}")
+            return str(e), "Error"
+        finally:
+            self.current_process = None
+            if "Success" in log_content or job_type != "brute_force":
+                self.is_processing_job = False
+                self.current_mode = None
 
-            if "Exhausted" in log_content:
-                return log_content, "Exhausted"
-            elif current_process.returncode == 0:
-                current_job_status["progress"] = "100%"
-                return log_content, "Success"
-            else:
-                return log_content, "Error"
-
-    except asyncio.TimeoutError:
-        return f"Hashcat operation timed out. Partial output in {log_filename}", "Timeout"
-    except Exception as e:
-        logging.error(f"Error running hashcat: {e}")
-        return str(e), "Error"
-    finally:
-        current_process = None  # Clear the reference to the process
-        if "Success" in log_content or job_type != "brute_force":
-            is_processing_job = False
-            current_mode = None
-
-def get_hashcat_status(filename):
-    with open(filename, 'r') as file:
-        lines = file.readlines()
-    for line in reversed(lines):
-        if "Progress.........:" in line:
-            match = re.search(r"Progress.........: .+? \((\d+\.\d+)%\)", line)
-            if match:
-                return match.group(1) + "%"
-    return "0%"
-
-@bot.command(name="hashcat_stop")
-async def hashcat_stop(ctx):
-    global is_processing_job, current_process
-    if not is_processing_job:
-        await ctx.send("No hashcat job is currently running.")
-        return
-    if current_process:
-        current_process.terminate()
-        is_processing_job = False
-        await ctx.send("Hashcat job terminated.")
-    else:
-        await ctx.send("Error: Couldn't terminate hashcat job. Try again later.")
-
-@bot.event
-async def on_ready():
-    logging.info(f"{bot.user.name} is now online!")
+manager = HashcatManager()
 
 @bot.command(name="hashcat")
 async def _hashcat(ctx, algorithm: str = None, hash_value: str = None):
@@ -139,9 +114,7 @@ async def _hashcat(ctx, algorithm: str = None, hash_value: str = None):
         await ctx.send(help_text)
         return
 
-    global is_processing_job, current_mode
-
-    if is_processing_job:
+    if manager.is_processing_job:
         await ctx.send("Hashcat is currently processing a job. Please wait.")
         return
 
@@ -155,43 +128,60 @@ async def _hashcat(ctx, algorithm: str = None, hash_value: str = None):
 
     wordlist = "rockyou.txt"
     command = ["hashcat", "-m", str(SUPPORTED_ALGORITHMS[algorithm]), hash_value, wordlist, "-r", RULE_FILE]
-
-    is_processing_job = True
-    await ctx.send("Hashcat operation started using rockyou.txt wordlist with rule file, this may take up to an hour.")
-    stdout, status = await run_hashcat(command, 3600, "rockyou")
+    manager.is_processing_job = True
+    await ctx.send("Hashcat operation started using a wordlist with rule file, this may take up to an hour.")
+    stdout, status = await manager.run_hashcat(command, 3600, "rockyou")
 
     if status == "Exhausted" or status == "Timeout":
-        password = find_password_for_hash(hash_value)
+        manager.is_processing_job = False
+        manager.current_mode = None
+        password = manager.find_password_for_hash(hash_value)
         if not password:
             await ctx.send("Did not find the password using rockyou.txt with rule file. Switching to brute force mode for an additional hour.")
-            current_mode = "brute_force"
-            is_processing_job = True
+            manager.current_mode = "brute_force"
+            manager.is_processing_job = True
             command = ["hashcat", "-m", str(SUPPORTED_ALGORITHMS[algorithm]), hash_value, "-a", "3"]
-            stdout, status = await run_hashcat(command, 3600, "brute_force")
+            stdout, status = await manager.run_hashcat(command, 3600, "brute_force")
 
     if status == "Success":
-        password = find_password_for_hash(hash_value)
+        password = manager.find_password_for_hash(hash_value)
         if password:
-            await ctx.send(f"Hash cracked!\n\nHash: {hash_value}\nPassword: {password}")
+            await ctx.send(f"Found password: {password}")
         else:
-            await ctx.send(f"Hash cracked, but could not retrieve the password from the potfile.\n\n{stdout}")
-    elif status == "Timeout":
-        await ctx.send("Hashcat operation timed out without finding the password.")
-    else:
-        await ctx.send(f"Failed to crack the hash:\n\n{stdout}")
+            await ctx.send("Password not found in hashcat.potfile, but hashcat reported success. Please check manually.")
+    elif status == "Timeout" or status == "Error":
+        manager.is_processing_job = False
+        manager.current_mode = None
+        await ctx.send(f"Hashcat operation did not finish successfully. Status: {status}")
+
+
+@bot.command(name="hashcat_stop")
+async def hashcat_stop(ctx):
+    if not manager.is_processing_job:
+        await ctx.send("No Hashcat operation is currently running.")
+        return
+    if manager.current_process:
+        manager.current_process.terminate()
+    manager.is_processing_job = False
+    manager.current_mode = None
+    await ctx.send("Hashcat operation stopped.")
 
 @bot.command(name="hashcat_status")
 async def hashcat_status(ctx):
-    global is_processing_job, current_job_status
-    if is_processing_job:
-        elapsed_time = time.time() - current_job_status["start_time"]
-        timestamp = datetime.datetime.fromtimestamp(current_job_status["start_time"]).strftime('%Y%m%d%H%M%S')
-        log_filename = f"hashcat_output_{timestamp}.log"
-        progress = get_hashcat_status(log_filename)
-        await ctx.send(f"Hashcat is currently processing a job using the {current_job_status['algorithm']} algorithm.\nElapsed time: {int(elapsed_time)} seconds\nProgress: {progress}")
-    else:
-        await ctx.send("Hashcat is not currently processing any jobs.")
+    if not manager.is_processing_job:
+        await ctx.send("No Hashcat operation is currently running.")
+        return
+    elapsed_time = int(time.time() - manager.current_job_status["start_time"])
+    elapsed_time_string = str(datetime.timedelta(seconds=elapsed_time))
+    progress = manager.get_hashcat_status("hashcat.log")
+    status_message = (f"Hashcat is cracking with algorithm {manager.current_job_status['algorithm']}.\n"
+                      f"Elapsed Time: {elapsed_time_string}\n"
+                      f"Progress: {progress}")
+    await ctx.send(status_message)
 
+@bot.event
+async def on_ready():
+    logging.info(f"We have logged in as {bot.user}")
 
 if __name__ == "__main__":
-    bot.run("")  # Replace with your actual bot token
+    bot.run("")

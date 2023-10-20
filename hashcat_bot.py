@@ -38,7 +38,7 @@ class HashcatManager:
     def __init__(self):
         self.is_processing_job = False
         self.current_process = None
-        self.current_job_status = {"algorithm": None, "start_time": None, "progress": "0%"}
+        self.current_job_status = {"algorithm": None, "start_time": None, "progress": "0%", "timeout": None}
         self.current_mode = None
 
     def read_log_file(self, filename):
@@ -57,18 +57,8 @@ class HashcatManager:
                     return password
         return None
 
-    def get_hashcat_status(self, filename):
-        with open(filename, 'r') as file:
-            lines = file.readlines()
-        for line in reversed(lines):
-            if "Progress.........:" in line:
-                match = re.search(r"Progress.........: .+? \((\d+\.\d+)%\)", line)
-                if match:
-                    return match.group(1) + "%"
-        return "0%"
-
     async def run_hashcat(self, command, timeout, job_type="rockyou"):
-        log_content = ""  # initialize log_content here
+        log_content = ""
         timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         log_filename = f"hashcat_output_{timestamp}.log"
         command.extend(["--status-timer=1"])
@@ -77,6 +67,7 @@ class HashcatManager:
                 self.current_process = await asyncio.create_subprocess_exec(*command, stdout=log_file, stderr=log_file)
                 self.current_job_status["start_time"] = time.time()
                 self.current_job_status["algorithm"] = command[2]
+                self.current_job_status["timeout"] = timeout
                 await asyncio.wait_for(self.current_process.wait(), timeout=timeout)
                 log_content = self.read_log_file(log_filename)
                 if "Exhausted" in log_content:
@@ -154,7 +145,6 @@ async def _hashcat(ctx, algorithm: str = None, hash_value: str = None):
         manager.current_mode = None
         await ctx.send(f"Hashcat operation did not finish successfully. Status: {status}")
 
-
 @bot.command(name="hashcat_stop")
 async def hashcat_stop(ctx):
     if not manager.is_processing_job:
@@ -172,11 +162,12 @@ async def hashcat_status(ctx):
         await ctx.send("No Hashcat operation is currently running.")
         return
     elapsed_time = int(time.time() - manager.current_job_status["start_time"])
+    total_time = manager.current_job_status["timeout"]
+    progress_percentage = min(100, (elapsed_time / total_time) * 100)
     elapsed_time_string = str(datetime.timedelta(seconds=elapsed_time))
-    progress = manager.get_hashcat_status("hashcat.log")
     status_message = (f"Hashcat is cracking with algorithm {manager.current_job_status['algorithm']}.\n"
                       f"Elapsed Time: {elapsed_time_string}\n"
-                      f"Progress: {progress}")
+                      f"Progress: {progress_percentage:.2f}%")
     await ctx.send(status_message)
 
 @bot.event

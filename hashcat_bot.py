@@ -1,3 +1,4 @@
+#Data 10/26/23
 import re
 import asyncio
 import logging
@@ -18,15 +19,16 @@ INTENTS.message_content = True
 
 RULE_FILE = "rules/OneRuleToRuleThemStill.rule"
 SUPPORTED_ALGORITHMS = {
-    "md5": 0, "sha1": 100, "ntlm": 1000, "netntlmv2": 5600, "mssql2000": 131, "mssql2005": 132
+    "md5": 0, "sha1": 100, "ntlm": 1000, "netntlmv2": 5600, "mssql2000": 131, "mssql2005": 132,  "asrep": 18200
 }
 HASH_PATTERNS = {
     "md5": re.compile("^[a-fA-F0-9]{32}$"),
     "sha1": re.compile("^[a-fA-F0-9]{40}$"),
     "ntlm": re.compile("^[a-fA-F0-9]{32}$"),
-    "netntlmv2": re.compile("^[a-zA-Z0-9\-_]+::[a-zA-Z0-9\-_]+:[a-fA-F0-9]{16}:[a-fA-F0-9]+:[a-fA-F0-9]+$"),
+    "netntlmv2": re.compile("^[a-zA-Z0-9\-_$]+::[a-zA-Z0-9\-_$]*:[a-fA-F0-9]{16}:[a-fA-F0-9]+:[a-fA-F0-9]+$"),
     "mssql2000": re.compile("^[a-fA-F0-9]{54}$"),
-    "mssql2005": re.compile("^[a-fA-F0-9]{40}$")
+    "mssql2005": re.compile("^[a-fA-F0-9]{40}$"),
+    "asrep": re.compile(r"^\$krb5asrep\$[0-9]+\$[a-zA-Z0-9\-_.]+@[a-zA-Z0-9\-_.]+:.*\$[a-fA-F0-9]+$") #added
 }
 
 bot = commands.Bot(command_prefix="!", intents=INTENTS)
@@ -118,7 +120,7 @@ async def _hashcat(ctx, algorithm: str = None, hash_value: str = None):
         return
 
     wordlist = "rockyou.txt"
-    command = ["hashcat", "-m", str(SUPPORTED_ALGORITHMS[algorithm]), hash_value, wordlist, "-r", RULE_FILE]
+    command = ["hashcat", "-m", str(SUPPORTED_ALGORITHMS[algorithm]), hash_value, wordlist, "-r", RULE_FILE, "--loopback"]
     manager.is_processing_job = True
     await ctx.send("Hashcat operation started using a wordlist with rule file, this may take up to an hour.")
     stdout, status = await manager.run_hashcat(command, 3600, "rockyou")

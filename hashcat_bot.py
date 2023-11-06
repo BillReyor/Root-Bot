@@ -1,4 +1,4 @@
-#Data 10/26/23
+#Data 11/6/23
 import re
 import asyncio
 import logging
@@ -19,8 +19,9 @@ INTENTS.message_content = True
 
 RULE_FILE = "rules/OneRuleToRuleThemStill.rule"
 SUPPORTED_ALGORITHMS = {
-    "md5": 0, "sha1": 100, "ntlm": 1000, "netntlmv2": 5600, "mssql2000": 131, "mssql2005": 132,  "asrep": 18200
+    "md5": 0, "sha1": 100, "ntlm": 1000, "netntlmv2": 5600, "mssql2000": 131, "mssql2005": 132, "asrep23": 18200, "asrep18": 19700, "bcrypt": 3200
 }
+
 HASH_PATTERNS = {
     "md5": re.compile("^[a-fA-F0-9]{32}$"),
     "sha1": re.compile("^[a-fA-F0-9]{40}$"),
@@ -28,7 +29,9 @@ HASH_PATTERNS = {
     "netntlmv2": re.compile("^[a-zA-Z0-9\-_$]+::[a-zA-Z0-9\-_$]*:[a-fA-F0-9]{16}:[a-fA-F0-9]+:[a-fA-F0-9]+$"),
     "mssql2000": re.compile("^[a-fA-F0-9]{54}$"),
     "mssql2005": re.compile("^[a-fA-F0-9]{40}$"),
-    "asrep": re.compile(r"^\$krb5asrep\$[0-9]+\$[a-zA-Z0-9\-_.]+@[a-zA-Z0-9\-_.]+:.*\$[a-fA-F0-9]+$") #added
+    "asrep23": re.compile(r"^\$krb5asrep\$[0-9]+\$[a-zA-Z0-9\-_.]+@[a-zA-Z0-9\-_.]+:.*\$[a-fA-F0-9]+$"),
+    "asrep18": re.compile(r"^\$krb5tgs\$18\$[a-zA-Z0-9\-./]+\$[A-Z]+\$\*[a-zA-Z0-9\-./]+\*\$[a-fA-F0-9]+\$[a-fA-F0-9]+$"),
+    "bcrypt": re.compile("^\$2[ayb]\$[0-9]{2}\$[a-zA-Z0-9./]{53}$")
 }
 
 bot = commands.Bot(command_prefix="!", intents=INTENTS)

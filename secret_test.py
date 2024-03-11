@@ -42,3 +42,10 @@ client = boto3.client(
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
     region_name='us-west-2'
 )
+
+#Pat = ghp_PZyXjpf9Ncke52eRIYUCWNkbfCTYbh3ujMni
+
+#tts
+
+#```python3.11 tts_public.py
+#export OPENAI_API_KEY='sk-gK50w7yG2sV1x7PMx44oT3BtbkFJ2LaqXMMDAh2Ck53heaUR'

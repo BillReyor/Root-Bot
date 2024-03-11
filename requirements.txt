@@ -6,7 +6,7 @@ multidict==6.0.2
 attrs==21.4.0
 chardet==4.0.0
 idna==3.3
-requests==2.28.1
+requests==2.31.0
 openai==0.20.0
 shodan==1.27.0
 logging==0.4.9.6

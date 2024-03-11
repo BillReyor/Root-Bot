@@ -29,3 +29,15 @@ shodan_api = shodan.Shodan(shodan_api_key)
 last_interaction = datetime.now() - timedelta(hours=24)
 
 # Example function definitions and bot commands follow...
+
+# Example AWS credentials (FAKE for testing purposes)
+AWS_ACCESS_KEY_ID = 'AKIAIOSFODNN7EXAMPLE'
+AWS_SECRET_ACCESS_KEY = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+
+# Initialize a boto3 client
+client = boto3.client(
+    's3',
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    region_name='us-west-2'
+)

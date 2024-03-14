@@ -1,3 +1,5 @@
+[![Pylint](https://github.com/BillReyor/Root-Bot/actions/workflows/pylint.yml/badge.svg)](https://github.com/BillReyor/Root-Bot/actions/workflows/pylint.yml)
+
 # Root Bot
 
 Welcome to Root Bot, your AI assistant for exploring the world of hacking, security, and privacy.

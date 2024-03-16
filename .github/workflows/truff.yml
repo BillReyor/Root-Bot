@@ -17,5 +17,4 @@ jobs:
       with:
         base: ""
         head: ${{ github.ref_name }}
-      #with:
-      #  extra_args: --only-verified
+        extra_args: --debug

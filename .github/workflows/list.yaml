@@ -2,34 +2,25 @@ name: List Accessible Repositories
 
 on:
   workflow_dispatch:
-  
+
 permissions:
-  actions: read
-  checks: read
   contents: read
-  deployments: read
-  id-token: write
-  issues: read
-  discussions: read
-  packages: read
-  pages: read
-  pull-requests: read
-  repository-projects: read
-  security-events: read
-  statuses: read
+  metadata: read
 
 jobs:
   list-repos:
     runs-on: ubuntu-latest
     
     steps:
-    - name: List repositories
+    - name: Checkout repositories
       run: |
-        gh api --paginate "user/repos?per_page=100" --jq '.[].full_name' > repos.txt
+        mkdir repos
+        git init --bare repos/checkout.git
+        git --git-dir=repos/checkout.git remote add origin https://github.com/${{ github.repository_owner }}/${{ github.repository }}
+        git --git-dir=repos/checkout.git fetch --prune
+        git --git-dir=repos/checkout.git config --get-regexp 'remote\..*\.url' | sed 's/^remote\.\(.*\)\.url /:\1 /' > repos.txt
         echo "List of accessible repositories:"
         cat repos.txt
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Upload repo list
       uses: actions/upload-artifact@v3

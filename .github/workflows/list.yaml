@@ -12,12 +12,13 @@ jobs:
     
     steps:
     - name: Checkout repositories
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        mkdir repos
-        git init --bare repos/checkout.git
-        git --git-dir=repos/checkout.git remote add origin https://github.com/${{ github.repository_owner }}/${{ github.repository }}
-        git --git-dir=repos/checkout.git fetch --prune --all
-        git --git-dir=repos/checkout.git config --get-regexp 'remote\..*\.url' | sed 's/^remote\.\(.*\)\.url /:\1 /' > repos.txt
+        git init --bare repos
+        git --git-dir=repos remote add origin https://github.com/${{ github.repository_owner }}/${{ github.repository }}
+        git --git-dir=repos fetch --prune --all
+        git --git-dir=repos remote -v > repos.txt
         echo "List of accessible repositories:"
         cat repos.txt
         

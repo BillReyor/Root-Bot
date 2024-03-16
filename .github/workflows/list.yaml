@@ -5,7 +5,7 @@ on:
 
 permissions:
   contents: read
-  repositories: read
+  organizations: read
 
 jobs:
   list-repos:

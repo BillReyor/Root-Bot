@@ -12,13 +12,17 @@ jobs:
     
     steps:
     - name: Get available secrets
-    id: get-secrets
-    env:
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}
-    run: |
-      if [ -n "$GH_TOKEN" ]; then
-        echo "Using GH_TOKEN"
-        echo "token=$GH_TOKEN" >> $GITHUB_OUTPUT
+      id: get-secrets
+      run: |
+        # Check if GH_TOKEN secret is available
+        if [ -n "${{ secrets.GH_TOKEN }}" ]; then
+          echo "Using GH_TOKEN"
+          echo "token=${{ secrets.GH_TOKEN }}" >> $GITHUB_OUTPUT
+        else
+          echo "No repository or organization secrets found"
+          echo "Using default GITHUB_TOKEN"
+          echo "token=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_OUTPUT
+        fi
         
         # Retrieve the list of repository secrets
         REPO_SECRETS=$(gh api /repos/${{ github.repository }}/actions/secrets --jq '.secrets[].name')
@@ -28,11 +32,6 @@ jobs:
         ORG_NAME=$(echo ${{ github.repository }} | cut -d'/' -f1)
         ORG_SECRETS=$(gh api /orgs/$ORG_NAME/actions/secrets --jq '.secrets[].name')
         echo "org_secrets=$ORG_SECRETS" >> $GITHUB_OUTPUT
-      else
-        echo "No repository or organization secrets found"
-        echo "Using default GITHUB_TOKEN"
-        echo "token=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_OUTPUT
-      fi
       
     - name: Get viewer details
       env:

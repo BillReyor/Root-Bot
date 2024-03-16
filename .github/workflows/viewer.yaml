@@ -30,7 +30,7 @@ jobs:
               isBountyHunter
               isEmployee
               isDeveloperProgramMember
-              organizations {
+              organizations(first: 100) {
                 nodes {
                   name
                   description
@@ -39,8 +39,12 @@ jobs:
                     totalCount
                   }
                 }
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
               }
-              repositories {
+              repositories(first: 100) {
                 nodes {
                   nameWithOwner
                   description
@@ -51,6 +55,10 @@ jobs:
                   isTemplate
                   viewerPermission
                   viewerSubscription
+                }
+                pageInfo {
+                  hasNextPage
+                  endCursor
                 }
               }
               starredRepositories {

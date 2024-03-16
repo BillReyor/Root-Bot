@@ -19,8 +19,62 @@ jobs:
         gh api graphql --paginate --field query='
           query {
             viewer {
-              email
+              login
               name
+              email
+              company
+              location
+              avatarUrl
+              websiteUrl
+              bio
+              isBountyHunter
+              isEmployee
+              isDeveloperProgramMember
+              viewerCanChangePinnedRepositories
+              viewerCanCreateRepositories
+              viewerCanCreatePublicRepositories
+              viewerCanCreatePrivateRepositories
+              viewerCanCreateOrganizations
+              viewerCanViewSamlIdpMetadata
+              viewerHovercardContext {
+                message
+                octicon
+              }
+              organizations {
+                nodes {
+                  name
+                  description
+                  avatarUrl
+                  membersWithRole {
+                    totalCount
+                  }
+                }
+              }
+              repositories {
+                nodes {
+                  nameWithOwner
+                  description
+                  isPrivate
+                  isFork
+                  isArchived
+                  isDisabled
+                  isTemplate
+                  viewerPermission
+                  viewerSubscription
+                }
+              }
+              starredRepositories {
+                totalCount
+              }
+              watching {
+                totalCount
+              }
+              followers {
+                totalCount
+              }
+              following {
+                totalCount
+              }
             }
           }
         ' --jq '.data.viewer'

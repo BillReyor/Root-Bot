@@ -30,16 +30,6 @@ jobs:
               isBountyHunter
               isEmployee
               isDeveloperProgramMember
-              viewerCanChangePinnedRepositories
-              viewerCanCreateRepositories
-              viewerCanCreatePublicRepositories
-              viewerCanCreatePrivateRepositories
-              viewerCanCreateOrganizations
-              viewerCanViewSamlIdpMetadata
-              viewerHovercardContext {
-                message
-                octicon
-              }
               organizations {
                 nodes {
                   name

@@ -11,19 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout repositories
+    - name: Install GitHub CLI
+      run: |
+        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+        sudo apt-get update
+        sudo apt-get install gh -y
+        
+    - name: List repositories
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        git init --bare repos
-        git --git-dir=repos remote add origin https://github.com/${{ github.repository_owner }}/${{ github.repository }}
-        git --git-dir=repos fetch --prune --all
-        git --git-dir=repos remote -v > repos.txt
         echo "List of accessible repositories:"
-        cat repos.txt
-        
-    - name: Upload repo list
-      uses: actions/upload-artifact@v3
-      with:
-        name: repo-list
-        path: repos.txt
+        gh repo list --limit 10000 --json fullName --jq '.[] | .fullName'

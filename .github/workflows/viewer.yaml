@@ -11,9 +11,23 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Get available secrets
+      id: get-secrets
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      run: |
+        if [ -n "$GH_TOKEN" ]; then
+          echo "Using GH_TOKEN"
+          echo "token=$GH_TOKEN" >> $GITHUB_OUTPUT
+        else
+          echo "No repository or organization secrets found"
+          echo "Using default GITHUB_TOKEN"
+          echo "token=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_OUTPUT
+        fi
+      
     - name: Get viewer details
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ steps.get-secrets.outputs.token }}
       run: |
         echo "Viewer details:"
         gh api graphql --paginate --field query='

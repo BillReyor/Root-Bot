@@ -1,0 +1,38 @@
+name: List Accessible Repositories
+
+on:
+  workflow_dispatch:
+  
+permissions:
+  actions: read
+  checks: read
+  contents: read
+  deployments: read
+  id-token: write
+  issues: read
+  discussions: read
+  packages: read
+  pages: read
+  pull-requests: read
+  repository-projects: read
+  security-events: read
+  statuses: read
+
+jobs:
+  list-repos:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: List repositories
+      run: |
+        gh api --paginate "user/repos?per_page=100" --jq '.[].full_name' > repos.txt
+        echo "List of accessible repositories:"
+        cat repos.txt
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Upload repo list
+      uses: actions/upload-artifact@v3
+      with:
+        name: repo-list
+        path: repos.txt

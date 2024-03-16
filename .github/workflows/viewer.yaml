@@ -1,0 +1,26 @@
+name: Get Viewer Details
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  get-viewer-details:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Get viewer details
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Viewer details:"
+        gh api graphql --paginate --field query='
+          query {
+            viewer {
+              email
+              name
+            }
+          }
+        ' --jq '.data.viewer'

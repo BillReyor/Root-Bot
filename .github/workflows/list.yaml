@@ -16,7 +16,12 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         echo "List of accessible repositories:"
-        curl --silent -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/user/repos?per_page=100 | jq '.[].full_name'
+        response=$(curl --silent -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/user/repos?per_page=100)
+        if echo "$response" | grep -q '^\['; then
+          echo "$response" | jq '.[].full_name'
+        else
+          echo "$response"
+        fi
         echo ""
         echo "List of organization repositories:"
         curl --silent -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/user/orgs | jq -r '.[] | .login' | xargs -I {} curl --silent -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/orgs/{}/repos?per_page=100 | jq '.[].full_name'

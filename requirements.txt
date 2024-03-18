@@ -5,7 +5,7 @@ yarl==1.7.2
 multidict==6.0.2
 attrs==21.4.0
 chardet==4.0.0
-idna==3.3
+idna==3.6
 requests==2.31.0
 openai==0.20.0
 shodan==1.27.0

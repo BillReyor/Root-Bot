@@ -13,4 +13,4 @@ logging==0.4.9.6
 re==2.2.1
 asyncio==3.4.3
 time==3.3
-datetime==4.4
+datetime==5.4

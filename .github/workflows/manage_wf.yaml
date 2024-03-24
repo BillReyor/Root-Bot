@@ -29,6 +29,10 @@ on:
         required: false
         type: string
 
+permissions:
+  actions: write
+  contents: write
+
 jobs:
   Get_Workflow_IDs:
     name: Get Workflow IDs

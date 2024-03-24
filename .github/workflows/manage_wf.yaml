@@ -12,7 +12,6 @@ on:
           - "run"
           - "list all"
           - "list failed"
-          - "delete all"
           - "delete failed"
       OWNER:
         description: "Owner"
@@ -112,30 +111,6 @@ jobs:
             echo "Workflow ID: $WORKFLOW_ID"
             FAILED_RUNS=$(gh api -X GET /repos/${{ inputs.OWNER }}/${{ inputs.REPOSITORY }}/actions/workflows/"$WORKFLOW_ID"/runs --paginate | jq -r '.workflow_runs[] | select(.conclusion=="failure") | "ID: \(.id)\nName: \(.name)\nStatus: \(.status)\nConclusion: \(.conclusion)\nCreated at: \(.created_at)\n"')
             echo "$FAILED_RUNS"
-            echo "---"
-          done
-
-  Delete_All:
-    name: Delete All Workflow Runs
-    needs: Get_Workflow_IDs
-    if: ${{ github.event.inputs.FUNCTION == 'delete all' }}
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Delete All Workflow Runs
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          IFS=',' read -ra WORKFLOW_IDS <<< "${{ needs.Get_Workflow_IDs.outputs.workflow_ids }}"
-          echo "---"
-          echo "Deleting All Workflow Runs:"
-          for WORKFLOW_ID in "${WORKFLOW_IDS[@]}"; do
-            echo "Workflow ID: $WORKFLOW_ID"
-            RUN_IDS=$(gh api -X GET /repos/${{ inputs.OWNER }}/${{ inputs.REPOSITORY }}/actions/workflows/"$WORKFLOW_ID"/runs --paginate | jq -r '.workflow_runs[].id')
-            for RUN_ID in $RUN_IDS; do
-              gh api -X DELETE /repos/${{ inputs.OWNER }}/${{ inputs.REPOSITORY }}/actions/runs/"$RUN_ID" --silent
-              echo "Run $RUN_ID deleted."
-            done
-            echo "All runs for Workflow $WORKFLOW_ID deleted."
             echo "---"
           done
 
